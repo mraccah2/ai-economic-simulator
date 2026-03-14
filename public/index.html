@@ -1,0 +1,1619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Economic Impact Simulator (2024–2045)</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1" integrity="sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ" crossorigin="anonymous"></script>
+    <style>
+        :root {
+            --bg-primary: #0f1117;
+            --bg-card: #1a1d29;
+            --bg-header: #12141f;
+            --text-primary: #e8eaed;
+            --text-secondary: #9aa0a6;
+            --text-on-dark: #ffffff;
+            --accent: #6366f1;
+            --accent-light: #818cf8;
+            --positive: #34d399;
+            --negative: #f87171;
+            --warning: #fbbf24;
+            --gap: 16px;
+            --radius: 12px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.5;
+        }
+
+        .dashboard-container {
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: var(--gap);
+        }
+
+        .dashboard-header {
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e1b4b 100%);
+            padding: 28px 32px;
+            border-radius: var(--radius);
+            margin-bottom: var(--gap);
+            border: 1px solid rgba(99,102,241,0.2);
+        }
+
+        .dashboard-header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-on-dark);
+            margin-bottom: 4px;
+        }
+
+        .dashboard-header .subtitle {
+            font-size: 14px;
+            color: rgba(255,255,255,0.6);
+        }
+
+        /* Controls Panel */
+        .controls-panel {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            padding: 24px;
+            margin-bottom: var(--gap);
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .controls-panel h2 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--accent-light);
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .control-group label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .control-group .value-display {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--accent-light);
+            min-height: 28px;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #2d3048;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            border: 2px solid #fff;
+        }
+
+        select {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: #2d3048;
+            color: var(--text-primary);
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .scenario-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .scenario-btn {
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.15);
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .scenario-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent-light);
+        }
+
+        .scenario-btn.active {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
+        }
+
+        /* KPI Row */
+        .kpi-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: var(--gap);
+            margin-bottom: var(--gap);
+        }
+
+        .kpi-card {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,0.06);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+        }
+
+        .kpi-card.accent::before { background: var(--accent); }
+        .kpi-card.positive::before { background: var(--positive); }
+        .kpi-card.negative::before { background: var(--negative); }
+        .kpi-card.warning::before { background: var(--warning); }
+
+        .kpi-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 8px;
+        }
+
+        .kpi-value {
+            font-size: 26px;
+            font-weight: 700;
+        }
+
+        .kpi-detail {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        /* Chart Grid */
+        .chart-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+            gap: var(--gap);
+            margin-bottom: var(--gap);
+        }
+
+        .chart-full {
+            grid-column: 1 / -1;
+        }
+
+        .chart-container {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            padding: 24px;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .chart-container h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .chart-container .chart-subtitle {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+
+        .chart-container canvas {
+            max-height: 320px;
+        }
+
+        /* Sector Table */
+        .table-section {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            padding: 24px;
+            border: 1px solid rgba(255,255,255,0.06);
+            overflow-x: auto;
+            margin-bottom: var(--gap);
+        }
+
+        .table-section h3 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .data-table thead th {
+            text-align: left;
+            padding: 10px 14px;
+            border-bottom: 2px solid rgba(255,255,255,0.08);
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+
+        .data-table tbody td {
+            padding: 10px 14px;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+
+        .data-table tbody tr:hover {
+            background: rgba(99,102,241,0.05);
+        }
+
+        .bar-cell {
+            position: relative;
+            min-width: 120px;
+        }
+
+        .bar-bg {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 6px;
+            border-radius: 3px;
+            opacity: 0.4;
+        }
+
+        /* Info Panels */
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: var(--gap);
+            margin-bottom: var(--gap);
+        }
+
+        .info-panel {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            padding: 24px;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .info-panel h3 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--accent-light);
+        }
+
+        .info-panel p {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+
+        .source-tag {
+            display: inline-block;
+            background: rgba(99,102,241,0.15);
+            color: var(--accent-light);
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 3px;
+            margin-left: 4px;
+        }
+
+        /* Footer */
+        .dashboard-footer {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-secondary);
+            font-size: 12px;
+        }
+
+        .dashboard-footer a {
+            color: var(--accent-light);
+            text-decoration: none;
+        }
+
+        /* Year Indicator */
+        .year-indicator {
+            text-align: center;
+            font-size: 56px;
+            font-weight: 800;
+            color: rgba(99,102,241,0.15);
+            margin-bottom: -10px;
+            pointer-events: none;
+            user-select: none;
+        }
+
+        /* Tooltip overlay */
+        .tooltip-icon {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.08);
+            color: var(--text-secondary);
+            font-size: 10px;
+            text-align: center;
+            line-height: 14px;
+            cursor: help;
+            margin-left: 4px;
+            position: relative;
+        }
+
+        .tooltip-icon:hover::after {
+            content: attr(data-tip);
+            position: absolute;
+            bottom: 120%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e1b4b;
+            color: #e8eaed;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            white-space: nowrap;
+            z-index: 10;
+            border: 1px solid rgba(99,102,241,0.3);
+            max-width: 280px;
+            white-space: normal;
+            text-align: left;
+        }
+
+        @media (max-width: 768px) {
+            .chart-row { grid-template-columns: 1fr; }
+            .kpi-row { grid-template-columns: repeat(2, 1fr); }
+            .controls-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+<div class="dashboard-container">
+
+    <div class="dashboard-header">
+        <h1>AI Economic Impact Simulator</h1>
+        <div class="subtitle">Interactive model of AI adoption effects on employment, profitability, and purchasing power (2024–2045) &mdash; built from McKinsey, Goldman Sachs, WEF, and Moody's data</div>
+    </div>
+
+    <!-- Scenario Presets -->
+    <div class="controls-panel">
+        <h2>Scenario Presets</h2>
+        <div class="scenario-buttons" style="margin-bottom:20px;">
+            <button class="scenario-btn" onclick="loadScenario('conservative')">Conservative</button>
+            <button class="scenario-btn active" onclick="loadScenario('baseline')">Baseline (Research Consensus)</button>
+            <button class="scenario-btn" onclick="loadScenario('aggressive')">Aggressive Automation</button>
+            <button class="scenario-btn" onclick="loadScenario('bifurcation')">Bifurcation Thesis</button>
+        </div>
+
+        <h2>Simulation Parameters</h2>
+        <div class="controls-grid">
+            <div class="control-group">
+                <label>AI Adoption Rate (% of firms by 2030) <span class="tooltip-icon" data-tip="McKinsey: 70% of firms adopt AI by 2030. Goldman Sachs: already 374/500 S&P firms use AI.">?</span></label>
+                <div class="value-display" id="val-adoption">70%</div>
+                <input type="range" id="slider-adoption" min="30" max="95" value="70" oninput="updateSim()">
+            </div>
+            <div class="control-group">
+                <label>Task Automation Ceiling (% of work hours) <span class="tooltip-icon" data-tip="McKinsey: 30% of US hours automatable by 2030. Full potential: 57% including robotics.">?</span></label>
+                <div class="value-display" id="val-automation">35%</div>
+                <input type="range" id="slider-automation" min="10" max="65" value="35" oninput="updateSim()">
+            </div>
+            <div class="control-group">
+                <label>Productivity Multiplier <span class="tooltip-icon" data-tip="Goldman Sachs: AI could raise labor productivity by 15%. PwC: 4x productivity growth in AI-exposed sectors.">?</span></label>
+                <div class="value-display" id="val-productivity">1.5x</div>
+                <input type="range" id="slider-productivity" min="100" max="400" value="150" oninput="updateSim()">
+            </div>
+            <div class="control-group">
+                <label>Job Reabsorption Rate (% displaced finding new work/yr) <span class="tooltip-icon" data-tip="WEF: 170M new jobs vs 92M displaced by 2030. Historical avg reabsorption: 60-80%/year.">?</span></label>
+                <div class="value-display" id="val-reabsorb">55%</div>
+                <input type="range" id="slider-reabsorb" min="20" max="90" value="55" oninput="updateSim()">
+            </div>
+            <div class="control-group">
+                <label>Wage-to-Productivity Pass-through <span class="tooltip-icon" data-tip="EU analysis: only 3-7% of AI productivity gains go to workers. Historical norm: ~50%.">?</span></label>
+                <div class="value-display" id="val-passthrough">15%</div>
+                <input type="range" id="slider-passthrough" min="3" max="60" value="15" oninput="updateSim()">
+            </div>
+            <div class="control-group">
+                <label>Policy Response <span class="tooltip-icon" data-tip="UBI, retraining subsidies, or transition support that partially offsets lost wages.">?</span></label>
+                <div class="value-display" id="val-policy">Moderate</div>
+                <select id="select-policy" onchange="updateSim()">
+                    <option value="none">None</option>
+                    <option value="moderate" selected>Moderate (retraining programs)</option>
+                    <option value="strong">Strong (UBI + retraining)</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Year Scrubber -->
+    <div class="controls-panel" style="text-align:center; padding: 16px 24px;">
+        <label style="font-size:12px; text-transform:uppercase; letter-spacing:0.8px; color:var(--text-secondary); font-weight:600;">Simulation Year</label>
+        <div class="year-indicator" id="year-display">2024</div>
+        <input type="range" id="slider-year" min="0" max="21" value="0" style="max-width:600px;" oninput="updateYearView()">
+        <div style="display:flex; justify-content:space-between; max-width:600px; margin:8px auto 0; font-size:11px; color:var(--text-secondary);">
+            <span>2024</span><span>2030</span><span>2035</span><span>2040</span><span>2045</span>
+        </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="kpi-row">
+        <div class="kpi-card accent">
+            <div class="kpi-label">Unemployment Rate</div>
+            <div class="kpi-value" id="kpi-unemployment">3.7%</div>
+            <div class="kpi-detail" id="kpi-unemployment-detail">Baseline 2024</div>
+        </div>
+        <div class="kpi-card negative">
+            <div class="kpi-label">Jobs Displaced (Cumulative)</div>
+            <div class="kpi-value" id="kpi-displaced">0</div>
+            <div class="kpi-detail" id="kpi-displaced-detail">Net of reabsorption</div>
+        </div>
+        <div class="kpi-card positive">
+            <div class="kpi-label">Corporate Profit Growth</div>
+            <div class="kpi-value" id="kpi-profit">+0%</div>
+            <div class="kpi-detail" id="kpi-profit-detail">vs. 2024 baseline</div>
+        </div>
+        <div class="kpi-card warning">
+            <div class="kpi-label">Consumer Purchasing Power</div>
+            <div class="kpi-value" id="kpi-purchasing">100</div>
+            <div class="kpi-detail" id="kpi-purchasing-detail">Index (2024 = 100)</div>
+        </div>
+        <div class="kpi-card accent">
+            <div class="kpi-label">GDP Growth (Annual)</div>
+            <div class="kpi-value" id="kpi-gdp">+2.5%</div>
+            <div class="kpi-detail" id="kpi-gdp-detail">AI contribution shown</div>
+        </div>
+        <div class="kpi-card positive">
+            <div class="kpi-label">Gini Coefficient</div>
+            <div class="kpi-value" id="kpi-gini">0.39</div>
+            <div class="kpi-detail" id="kpi-gini-detail">Inequality index</div>
+        </div>
+    </div>
+
+    <!-- Main Charts -->
+    <div class="chart-row">
+        <div class="chart-container chart-full">
+            <h3>Employment & Unemployment Over Time</h3>
+            <div class="chart-subtitle">Total employment (millions) and unemployment rate trajectory across the simulation</div>
+            <canvas id="chart-employment" style="max-height:350px;"></canvas>
+        </div>
+    </div>
+
+    <div class="chart-row">
+        <div class="chart-container">
+            <h3>Corporate Profitability vs. Consumer Purchasing Power</h3>
+            <div class="chart-subtitle">The divergence between capital returns and labor income</div>
+            <canvas id="chart-profit-vs-purchasing"></canvas>
+        </div>
+        <div class="chart-container">
+            <h3>GDP Composition</h3>
+            <div class="chart-subtitle">AI-driven productivity vs. demand-side drag from reduced employment</div>
+            <canvas id="chart-gdp"></canvas>
+        </div>
+    </div>
+
+    <div class="chart-row">
+        <div class="chart-container">
+            <h3>Job Displacement by Sector</h3>
+            <div class="chart-subtitle">Cumulative displacement rate at selected year</div>
+            <canvas id="chart-sectors"></canvas>
+        </div>
+        <div class="chart-container">
+            <h3>Income Inequality (Gini Coefficient)</h3>
+            <div class="chart-subtitle">Rising inequality as AI benefits concentrate at top</div>
+            <canvas id="chart-gini"></canvas>
+        </div>
+    </div>
+
+    <div class="chart-row">
+        <div class="chart-container chart-full">
+            <h3>The Feedback Loop: Profits → Displacement → Demand Erosion</h3>
+            <div class="chart-subtitle">Annual flow showing how cost savings from AI create short-term profits but erode the consumer base over time</div>
+            <canvas id="chart-feedback" style="max-height:350px;"></canvas>
+        </div>
+    </div>
+
+    <!-- K-SHAPED ECONOMY SECTION -->
+    <div class="controls-panel" style="border-left: 3px solid #e879f9; margin-bottom: var(--gap);">
+        <h2 style="color: #e879f9;">K-Shaped Economy Analysis</h2>
+        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 0;">
+            The economy splits into diverging trajectories: those who own capital or work with AI see incomes rise,
+            while displaced workers see purchasing power collapse. Luxury goods thrive as essentials-only spending grows.
+        </p>
+    </div>
+
+    <!-- K-Shape KPI Cards -->
+    <div class="kpi-row">
+        <div class="kpi-card positive">
+            <div class="kpi-label">Top 10% Income Index</div>
+            <div class="kpi-value" id="kpi-top-income">100</div>
+            <div class="kpi-detail" id="kpi-top-income-detail">2024 = 100</div>
+        </div>
+        <div class="kpi-card negative">
+            <div class="kpi-label">Bottom 15% Income Index</div>
+            <div class="kpi-value" id="kpi-bottom-income">100</div>
+            <div class="kpi-detail" id="kpi-bottom-income-detail">2024 = 100</div>
+        </div>
+        <div class="kpi-card warning">
+            <div class="kpi-label">Top/Bottom Income Ratio</div>
+            <div class="kpi-value" id="kpi-income-ratio">13:1</div>
+            <div class="kpi-detail" id="kpi-income-ratio-detail">How far apart the extremes are</div>
+        </div>
+        <div class="kpi-card accent">
+            <div class="kpi-label">Luxury Market Size</div>
+            <div class="kpi-value" id="kpi-luxury-market">$0T</div>
+            <div class="kpi-detail" id="kpi-luxury-detail">Discretionary spending</div>
+        </div>
+    </div>
+
+    <!-- K-Shape Charts -->
+    <div class="chart-row">
+        <div class="chart-container chart-full">
+            <h3>The K-Shape: Income Trajectories by Cohort</h3>
+            <div class="chart-subtitle">Income index (2024 = 100) for each population segment — the defining visual of a bifurcated economy</div>
+            <canvas id="chart-kshape" style="max-height:380px;"></canvas>
+        </div>
+    </div>
+
+    <div class="chart-row">
+        <div class="chart-container">
+            <h3>Spending Composition: Luxury vs. Essentials</h3>
+            <div class="chart-subtitle">As lower cohorts shrink budgets to essentials, luxury spending concentrates among the top</div>
+            <canvas id="chart-spending"></canvas>
+        </div>
+        <div class="chart-container">
+            <h3>Cohort Spending Power at Selected Year</h3>
+            <div class="chart-subtitle">Total annual spending by income group ($B) — shows where consumer demand lives</div>
+            <canvas id="chart-cohort-spending"></canvas>
+        </div>
+    </div>
+
+    <!-- Cohort Detail Table -->
+    <div class="table-section">
+        <h3>Income Cohort Details at Selected Year</h3>
+        <div id="cohort-table"></div>
+    </div>
+
+    <!-- Sector Detail Table -->
+    <div class="table-section">
+        <h3>Sector-by-Sector Impact at Selected Year</h3>
+        <div id="sector-table"></div>
+    </div>
+
+    <!-- Methodology / Sources -->
+    <div class="info-grid">
+        <div class="info-panel">
+            <h3>Model Methodology</h3>
+            <p>This simulation uses a system dynamics approach with feedback loops between AI adoption → task automation → job displacement → wage effects → consumer demand → GDP. Sector-specific automation ceilings are calibrated to McKinsey/Goldman Sachs task-level exposure estimates. Reabsorption follows a logistic adoption curve. The model includes second-order effects: reduced consumer spending feeds back into corporate revenue, partially offsetting profit gains from labor cost savings.</p>
+        </div>
+        <div class="info-panel">
+            <h3>Key Research Sources</h3>
+            <p>
+                <strong>Goldman Sachs</strong> <span class="source-tag">2024-26</span> 300M global jobs exposed, 15% productivity gain potential<br><br>
+                <strong>McKinsey Global Institute</strong> <span class="source-tag">2024-25</span> 30% of US work hours automatable by 2030, $13T GDP uplift<br><br>
+                <strong>WEF Future of Jobs 2025</strong> <span class="source-tag">2025</span> 92M displaced, 170M created by 2030<br><br>
+                <strong>Moody's Analytics</strong> <span class="source-tag">Feb 2026</span> Macro model with hysteresis and demand-side risks<br><br>
+                <strong>EU AI Alliance</strong> <span class="source-tag">2025</span> Seven feedback loops; only 3-7% of productivity gains reach workers<br><br>
+                <strong>Dallas Fed</strong> <span class="source-tag">Feb 2026</span> AI simultaneously aiding and replacing workers
+            </p>
+        </div>
+        <div class="info-panel">
+            <h3>Important Caveats</h3>
+            <p>This is an illustrative simulation, not a forecast. Real economic outcomes depend on countless factors this model cannot capture: policy decisions, technological breakthroughs, geopolitical events, social adaptation, and emergent industries we can't predict. The model deliberately shows tensions and tradeoffs to aid thinking—not to make definitive claims. Historical technology transitions (electricity, computing) suggest both significant disruption AND eventual adaptation.</p>
+        </div>
+    </div>
+
+    <div class="dashboard-footer">
+        AI Economic Impact Simulator &mdash; Built March 2026 &mdash; Data from McKinsey, Goldman Sachs, WEF, Moody's, Dallas Fed, EU AI Alliance, PwC, Yale Budget Lab
+    </div>
+</div>
+
+<script>
+// ============================================================
+// ECONOMIC SIMULATION ENGINE
+// ============================================================
+
+const SECTORS = [
+    { name: 'Admin & Data Entry',     workers2024: 16.2, automationCeiling: 0.85, speed: 1.3,  avgWage: 42000 },
+    { name: 'Customer Service',        workers2024: 8.4,  automationCeiling: 0.72, speed: 1.2,  avgWage: 38000 },
+    { name: 'Financial Services',      workers2024: 9.1,  automationCeiling: 0.58, speed: 1.1,  avgWage: 82000 },
+    { name: 'Legal Support',           workers2024: 3.2,  automationCeiling: 0.55, speed: 1.0,  avgWage: 65000 },
+    { name: 'Manufacturing',           workers2024: 12.8, automationCeiling: 0.48, speed: 0.8,  avgWage: 52000 },
+    { name: 'Retail & Sales',          workers2024: 15.6, automationCeiling: 0.45, speed: 0.9,  avgWage: 35000 },
+    { name: 'Transportation & Logistics', workers2024: 10.2, automationCeiling: 0.42, speed: 0.6, avgWage: 48000 },
+    { name: 'Professional Services',   workers2024: 11.5, automationCeiling: 0.35, speed: 0.85, avgWage: 95000 },
+    { name: 'Tech & Software',         workers2024: 5.8,  automationCeiling: 0.30, speed: 1.4,  avgWage: 120000 },
+    { name: 'Healthcare',              workers2024: 20.5, automationCeiling: 0.15, speed: 0.5,  avgWage: 62000 },
+    { name: 'Education',               workers2024: 12.1, automationCeiling: 0.18, speed: 0.5,  avgWage: 55000 },
+    { name: 'Construction & Trades',   workers2024: 8.0,  automationCeiling: 0.08, speed: 0.3,  avgWage: 56000 },
+    { name: 'Creative & Arts',         workers2024: 2.8,  automationCeiling: 0.12, speed: 0.7,  avgWage: 58000 },
+    { name: 'Government & Public',     workers2024: 22.0, automationCeiling: 0.20, speed: 0.4,  avgWage: 60000 },
+];
+
+const TOTAL_WORKERS_2024 = SECTORS.reduce((s, sec) => s + sec.workers2024, 0); // ~158M
+const TOTAL_WAGE_BILL_2024 = SECTORS.reduce((s, sec) => s + sec.workers2024 * sec.avgWage * 1e6, 0);
+const BASE_GDP = 28.78e12; // 2024 US GDP
+const BASE_UNEMPLOYMENT = 3.7;
+const BASE_LABOR_FORCE = 168; // millions
+const BASE_GINI = 0.39;
+const BASE_CORP_PROFIT_SHARE = 0.12; // corporate profits as share of GDP
+
+let simData = [];
+let charts = {};
+let currentYearIdx = 0;
+
+// Logistic S-curve for adoption
+function sCurve(t, midpoint, steepness) {
+    return 1 / (1 + Math.exp(-steepness * (t - midpoint)));
+}
+
+function runSimulation() {
+    const adoptionTarget = parseInt(document.getElementById('slider-adoption').value) / 100;
+    const automationCeiling = parseInt(document.getElementById('slider-automation').value) / 100;
+    const productivityMult = parseInt(document.getElementById('slider-productivity').value) / 100;
+    const reabsorptionRate = parseInt(document.getElementById('slider-reabsorb').value) / 100;
+    const passthrough = parseInt(document.getElementById('slider-passthrough').value) / 100;
+    const policy = document.getElementById('select-policy').value;
+
+    const policyBuffer = policy === 'none' ? 0 : policy === 'moderate' ? 0.15 : 0.35;
+
+    simData = [];
+
+    let cumulativeDisplaced = 0;
+    let cumulativeReabsorbed = 0;
+    let prevGDP = BASE_GDP;
+
+    for (let y = 0; y <= 21; y++) {
+        const year = 2024 + y;
+        const t = y;
+
+        // AI adoption follows an S-curve: slow start, rapid middle, plateau
+        const adoptionFraction = adoptionTarget * sCurve(t, 8, 0.45);
+
+        // Per-sector displacement
+        let yearDisplaced = 0;
+        let yearWageLoss = 0;
+        const sectorData = SECTORS.map(sec => {
+            // Effective automation for this sector at this time
+            const sectorAutomation = Math.min(
+                sec.automationCeiling * automationCeiling / 0.35, // scale relative to baseline
+                sec.automationCeiling
+            ) * adoptionFraction * sCurve(t, 7 / sec.speed, 0.4 * sec.speed);
+
+            const displaced = sec.workers2024 * sectorAutomation;
+            const wageLoss = displaced * sec.avgWage * 1e6;
+
+            return {
+                name: sec.name,
+                workers2024: sec.workers2024,
+                automationPct: sectorAutomation * 100,
+                displaced: displaced,
+                wageLoss: wageLoss,
+                avgWage: sec.avgWage,
+            };
+        });
+
+        yearDisplaced = sectorData.reduce((s, d) => s + d.displaced, 0);
+        yearWageLoss = sectorData.reduce((s, d) => s + d.wageLoss, 0);
+
+        // Reabsorption: displaced workers gradually find new roles
+        // But reabsorption decreases as more jobs are automated
+        const effectiveReabsorption = reabsorptionRate * (1 - adoptionFraction * 0.3);
+        cumulativeReabsorbed = yearDisplaced * effectiveReabsorption;
+        const netDisplaced = Math.max(0, yearDisplaced - cumulativeReabsorbed);
+
+        // Unemployment
+        const unemploymentRate = BASE_UNEMPLOYMENT + (netDisplaced / BASE_LABOR_FORCE) * 100;
+
+        // Corporate profitability
+        // Cost savings from displacement + productivity gains - demand erosion
+        const laborCostSavings = yearWageLoss;
+        const productivityGain = prevGDP * (productivityMult - 1) * adoptionFraction * 0.3;
+        const corpProfitGain = (laborCostSavings + productivityGain) / (BASE_GDP * BASE_CORP_PROFIT_SHARE) * 100;
+
+        // Consumer purchasing power
+        // Workers who keep jobs may see some wage pass-through from productivity
+        const remainingWorkerGain = TOTAL_WAGE_BILL_2024 * adoptionFraction * passthrough * 0.5;
+        const policyTransfer = yearWageLoss * policyBuffer;
+        const netWageEffect = -yearWageLoss + remainingWorkerGain + policyTransfer;
+        const purchasingPowerIndex = 100 + (netWageEffect / TOTAL_WAGE_BILL_2024) * 100;
+
+        // GDP: productivity uplift vs. demand drag
+        const productivityContribToGDP = prevGDP * (productivityMult - 1) * adoptionFraction * 0.15;
+        const demandDragOnGDP = yearWageLoss * 0.6 * (1 - policyBuffer); // MPC ~ 0.6
+        const netGDPChange = productivityContribToGDP - demandDragOnGDP;
+        const newGDP = prevGDP + netGDPChange + prevGDP * 0.018; // base 1.8% growth
+        const gdpGrowthRate = ((newGDP - prevGDP) / prevGDP) * 100;
+
+        // Gini coefficient: inequality rises with displacement and low pass-through
+        const giniShift = adoptionFraction * (1 - passthrough) * 0.12 * (1 - policyBuffer);
+        const gini = Math.min(0.65, BASE_GINI + giniShift);
+
+        // Employment level
+        const totalEmployed = TOTAL_WORKERS_2024 - netDisplaced;
+
+        // ============================================================
+        // K-SHAPED ECONOMY: Income Cohort Model
+        // ============================================================
+        // Split population into 5 income cohorts and track diverging outcomes
+        // Top 10%: Capital owners + AI-augmented professionals (WINNERS)
+        // Next 20%: Skilled workers with some AI augmentation
+        // Middle 30%: Mixed — some augmented, some displaced
+        // Next 25%: High-exposure workers, many displaced
+        // Bottom 15%: Already displaced or in precarious work
+
+        // Base 2024 income shares (roughly matching US quintile data)
+        const BASE_COHORTS = [
+            { name: 'Top 10% (Capital + AI-Augmented)', share: 0.30, basePop: 16.8, baseIncome: 285000, mpc: 0.35 },
+            { name: 'Upper-Middle 20%', share: 0.23, basePop: 33.6, baseIncome: 110000, mpc: 0.55 },
+            { name: 'Middle 30%', share: 0.22, basePop: 50.4, baseIncome: 62000, mpc: 0.75 },
+            { name: 'Lower-Middle 25%', share: 0.17, basePop: 42.0, baseIncome: 38000, mpc: 0.88 },
+            { name: 'Bottom 15%', share: 0.08, basePop: 25.2, baseIncome: 22000, mpc: 0.95 },
+        ];
+
+        // How AI changes each cohort's income:
+        // Top 10%: Gets capital returns (corp profit growth) + productivity premium
+        // Upper-Middle: Gets some augmentation premium, modest displacement
+        // Middle: Mixed effects — some gain, some lose
+        // Lower-Middle: Heavy displacement, limited augmentation
+        // Bottom 15%: Severe displacement, dependent on policy transfers
+        const cohortData = BASE_COHORTS.map((c, i) => {
+            let incomeMultiplier;
+            let spendingOnLuxury; // % of spending on discretionary/luxury goods
+            let spendingOnEssentials; // % on essentials (food, housing, utilities)
+            let effectivePop; // adjusted population accounting for movement between cohorts
+
+            if (i === 0) {
+                // Top 10%: Captures capital gains + AI productivity premium
+                incomeMultiplier = 1 + adoptionFraction * (productivityMult - 1) * 0.6 + corpProfitGain * 0.003;
+                spendingOnLuxury = 0.45 + adoptionFraction * 0.10; // luxury share GROWS
+                spendingOnEssentials = 0.20 - adoptionFraction * 0.03;
+                effectivePop = c.basePop * (1 + adoptionFraction * 0.05); // slightly grows as top performers join
+            } else if (i === 1) {
+                // Upper-Middle: Modest gains from augmentation, some displacement
+                incomeMultiplier = 1 + adoptionFraction * passthrough * 0.8 - adoptionFraction * 0.03;
+                spendingOnLuxury = 0.30 + adoptionFraction * 0.02;
+                spendingOnEssentials = 0.35;
+                effectivePop = c.basePop;
+            } else if (i === 2) {
+                // Middle 30%: Mixed — the K-shape pivot point
+                const displacementHit = adoptionFraction * 0.15 * (1 - reabsorptionRate * 0.5);
+                incomeMultiplier = 1 + adoptionFraction * passthrough * 0.3 - displacementHit;
+                spendingOnLuxury = Math.max(0.05, 0.22 - adoptionFraction * 0.08);
+                spendingOnEssentials = Math.min(0.65, 0.40 + adoptionFraction * 0.10);
+                effectivePop = c.basePop;
+            } else if (i === 3) {
+                // Lower-Middle: Heavy displacement pressure
+                const displacementHit = adoptionFraction * 0.30 * (1 - reabsorptionRate * 0.3);
+                incomeMultiplier = Math.max(0.4, 1 - displacementHit + policyBuffer * 0.4);
+                spendingOnLuxury = Math.max(0.02, 0.12 - adoptionFraction * 0.09);
+                spendingOnEssentials = Math.min(0.80, 0.50 + adoptionFraction * 0.20);
+                effectivePop = c.basePop * (1 + adoptionFraction * 0.08); // grows as middle falls
+            } else {
+                // Bottom 15%: Severe displacement, policy-dependent
+                const displacementHit = adoptionFraction * 0.45 * (1 - reabsorptionRate * 0.15);
+                incomeMultiplier = Math.max(0.3, 1 - displacementHit + policyBuffer * 0.6);
+                spendingOnLuxury = Math.max(0.01, 0.05 - adoptionFraction * 0.04);
+                spendingOnEssentials = Math.min(0.92, 0.60 + adoptionFraction * 0.25);
+                effectivePop = c.basePop * (1 + adoptionFraction * 0.12); // grows as displaced fall in
+            }
+
+            const adjustedIncome = c.baseIncome * incomeMultiplier;
+            const totalCohortIncome = adjustedIncome * effectivePop * 1e6; // annual
+            const luxurySpend = totalCohortIncome * spendingOnLuxury;
+            const essentialSpend = totalCohortIncome * spendingOnEssentials;
+            const savingsInvestment = totalCohortIncome * (1 - spendingOnLuxury - spendingOnEssentials);
+
+            return {
+                name: c.name,
+                incomeIndex: incomeMultiplier * 100, // 100 = 2024 baseline
+                adjustedIncome,
+                totalCohortIncome: totalCohortIncome / 1e9, // $B
+                luxurySpendB: luxurySpend / 1e9,
+                essentialSpendB: essentialSpend / 1e9,
+                savingsB: savingsInvestment / 1e9,
+                spendingOnLuxury: spendingOnLuxury * 100,
+                spendingOnEssentials: spendingOnEssentials * 100,
+                effectivePop,
+                mpc: c.mpc,
+            };
+        });
+
+        // Aggregate spending categories
+        const totalLuxurySpend = cohortData.reduce((s, c) => s + c.luxurySpendB, 0);
+        const totalEssentialSpend = cohortData.reduce((s, c) => s + c.essentialSpendB, 0);
+        const topBottomIncomeRatio = cohortData[0].adjustedIncome / cohortData[4].adjustedIncome;
+
+        simData.push({
+            year,
+            adoptionFraction,
+            totalEmployed,
+            netDisplaced,
+            unemploymentRate: Math.min(25, Math.max(BASE_UNEMPLOYMENT, unemploymentRate)),
+            corpProfitGain: Math.max(-20, corpProfitGain),
+            purchasingPowerIndex,
+            gdp: newGDP,
+            gdpGrowthRate,
+            productivityContrib: (productivityContribToGDP / prevGDP) * 100,
+            demandDrag: (demandDragOnGDP / prevGDP) * 100,
+            gini,
+            sectorData,
+            laborCostSavings: laborCostSavings / 1e9,
+            yearDisplaced,
+            yearWageLoss: yearWageLoss / 1e9,
+            // K-shaped economy data
+            cohortData,
+            totalLuxurySpend,
+            totalEssentialSpend,
+            topBottomIncomeRatio,
+        });
+
+        prevGDP = newGDP;
+    }
+
+    return simData;
+}
+
+// ============================================================
+// CHART RENDERING
+// ============================================================
+
+const COLORS = ['#6366f1','#f87171','#34d399','#fbbf24','#818cf8','#fb923c','#38bdf8','#e879f9','#a3e635','#f472b6'];
+
+function initCharts() {
+    const years = simData.map(d => d.year);
+
+    // Employment chart (dual axis)
+    charts.employment = new Chart(document.getElementById('chart-employment').getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: years,
+            datasets: [
+                {
+                    label: 'Total Employed (M)',
+                    data: simData.map(d => d.totalEmployed),
+                    borderColor: '#6366f1',
+                    backgroundColor: 'rgba(99,102,241,0.1)',
+                    fill: true,
+                    tension: 0.3,
+                    yAxisID: 'y',
+                    pointRadius: 2,
+                    borderWidth: 2.5,
+                },
+                {
+                    label: 'Unemployment Rate (%)',
+                    data: simData.map(d => d.unemploymentRate),
+                    borderColor: '#f87171',
+                    backgroundColor: 'rgba(248,113,113,0.1)',
+                    fill: true,
+                    tension: 0.3,
+                    yAxisID: 'y1',
+                    pointRadius: 2,
+                    borderWidth: 2.5,
+                    borderDash: [6, 3],
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { position: 'top', labels: { color: '#9aa0a6', usePointStyle: true, padding: 20 } },
+                tooltip: { backgroundColor: '#1a1d29', borderColor: '#6366f1', borderWidth: 1 }
+            },
+            scales: {
+                x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#9aa0a6' } },
+                y: {
+                    type: 'linear', position: 'left',
+                    title: { display: true, text: 'Employed (millions)', color: '#9aa0a6' },
+                    grid: { color: 'rgba(255,255,255,0.04)' },
+                    ticks: { color: '#9aa0a6' }
+                },
+                y1: {
+                    type: 'linear', position: 'right',
+                    title: { display: true, text: 'Unemployment %', color: '#9aa0a6' },
+                    grid: { drawOnChartArea: false },
+                    ticks: { color: '#f87171', callback: v => v.toFixed(1) + '%' },
+                    min: 0,
+                }
+            }
+        }
+    });
+
+    // Profit vs Purchasing Power
+    charts.profitVsPurchasing = new Chart(document.getElementById('chart-profit-vs-purchasing').getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: years,
+            datasets: [
+                {
+                    label: 'Corporate Profit Growth (%)',
+                    data: simData.map(d => d.corpProfitGain),
+                    borderColor: '#34d399',
+                    backgroundColor: 'rgba(52,211,153,0.1)',
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 2,
+                    borderWidth: 2.5,
+                },
+                {
+                    label: 'Purchasing Power Index',
+                    data: simData.map(d => d.purchasingPowerIndex),
+                    borderColor: '#fbbf24',
+                    backgroundColor: 'rgba(251,191,36,0.1)',
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 2,
+                    borderWidth: 2.5,
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { position: 'top', labels: { color: '#9aa0a6', usePointStyle: true, padding: 20 } },
+                tooltip: { backgroundColor: '#1a1d29', borderColor: '#6366f1', borderWidth: 1 }
+            },
+            scales: {
+                x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#9aa0a6' } },
+                y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#9aa0a6' } }
+            }
+        }
+    });
+
+    // GDP chart
+    charts.gdp = new Chart(document.getElementById('chart-gdp').getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: years,
+            datasets: [
+                {
+                    label: 'AI Productivity Boost (%)',
+                    data: simData.map(d => d.productivityContrib),
+                    backgroundColor: 'rgba(52,211,153,0.7)',
+                    borderRadius: 2,
+                    stack: 'gdp',
+                },
+                {
+                    label: 'Demand Drag (%)',
+                    data: simData.map(d => -d.demandDrag),
+                    backgroundColor: 'rgba(248,113,113,0.7)',
+                    borderRadius: 2,
+                    stack: 'gdp',
+                },
+                {
+                    label: 'Net GDP Growth (%)',
+                    data: simData.map(d => d.gdpGrowthRate),
+                    type: 'line',
+                    borderColor: '#818cf8',
+                    backgroundColor: 'transparent',
+                    tension: 0.3,
+                    pointRadius: 2,
+                    borderWidth: 2.5,
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { position: 'top', labels: { color: '#9aa0a6', usePointStyle: true, padding: 20 } },
+                tooltip: {
+                    backgroundColor: '#1a1d29', borderColor: '#6366f1', borderWidth: 1,
+                    callbacks: {
+                        label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y >= 0 ? '+' : ''}${ctx.parsed.y.toFixed(2)}%`
+                    }
+                }
+            },
+            scales: {
+                x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#9aa0a6' }, stacked: true },
+                y: {
+                    grid: { color: 'rgba(255,255,255,0.04)' },
+                    ticks: { color: '#9aa0a6', callback: v => v.toFixed(1) + '%' },
+                    stacked: true,
+                }
+            }
+        }
+    });
+
+    // Sector bar chart
+    const yearData = simData[currentYearIdx];
+    const sorted = [...yearData.sectorData].sort((a, b) => b.automationPct - a.automationPct);
+
+    charts.sectors = new Chart(document.getElementById('chart-sectors').getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: sorted.map(d => d.name),
+            datasets: [{
+                label: 'Automation %',
+                data: sorted.map(d => d.automationPct),
+                backgroundColor: sorted.map((d, i) => {
+                    const pct = d.automationPct;
+                    if (pct > 40) return 'rgba(248,113,113,0.7)';
+                    if (pct > 20) return 'rgba(251,191,36,0.7)';
+                    return 'rgba(52,211,153,0.7)';
+                }),
+                borderRadius: 4,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: 'y',
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#1a1d29', borderColor: '#6366f1', borderWidth: 1,
+                    callbacks: {
+                        label: ctx => `${ctx.parsed.x.toFixed(1)}% of tasks automated`
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { color: 'rgba(255,255,255,0.04)' },
+                    ticks: { color: '#9aa0a6', callback: v => v + '%' },
+                    max: 90,
+                },
+                y: { grid: { display: false }, ticks: { color: '#9aa0a6', font: { size: 11 } } }
+            }
+        }
+    });
+
+    // Gini chart
+    charts.gini = new Chart(document.getElementById('chart-gini').getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: years,
+            datasets: [{
+                label: 'Gini Coefficient',
+                data: simData.map(d => d.gini),
+                borderColor: '#e879f9',
+                backgroundColor: 'rgba(232,121,249,0.1)',
+                fill: true,
+                tension: 0.3,
+                pointRadius: 2,
+                borderWidth: 2.5,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top', labels: { color: '#9aa0a6', usePointStyle: true } },
+                tooltip: { backgroundColor: '#1a1d29', borderColor: '#6366f1', borderWidth: 1 },
+                annotation: {}
+            },
+            scales: {
+                x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#9aa0a6' } },
+                y: {
+                    grid: { color: 'rgba(255,255,255,0.04)' },
+                    ticks: { color: '#9aa0a6' },
+                    min: 0.3, max: 0.7,
+                }
+            }
+        }
+    });
+
+    // K-Shape Income Trajectories
+    const cohortColors = ['#34d399', '#38bdf8', '#fbbf24', '#fb923c', '#f87171'];
+    const cohortNames = simData[0].cohortData.map(c => c.name);
+
+    charts.kshape = new Chart(document.getElementById('chart-kshape').getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: years,
+            datasets: cohortNames.map((name, i) => ({
+                label: name,
+                data: simData.map(d => d.cohortData[i].incomeIndex),
+                borderColor: cohortColors[i],
+                backgroundColor: cohortColors[i] + '15',
+                fill: i === 0 || i === 4, // fill top and bottom to emphasize divergence
+                tension: 0.3,
+                pointRadius: 2,
+                borderWidth: i === 0 || i === 4 ? 3 : 2,
+                borderDash: i === 2 ? [4, 4] : [], // dash the middle to show it's the pivot
+            }))
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: { color: '#9aa0a6', usePointStyle: true, padding: 15, font: { size: 11 } }
+                },
+                tooltip: {
+                    backgroundColor: '#1a1d29', borderColor: '#e879f9', borderWidth: 1,
+                    callbacks: {
+                        label: ctx => {
+                            const idx = ctx.dataIndex;
+                            const cohort = simData[idx].cohortData[ctx.datasetIndex];
+                            return `${ctx.dataset.label}: ${cohort.incomeIndex.toFixed(1)} (${cohort.incomeIndex >= 100 ? '+' : ''}${(cohort.incomeIndex - 100).toFixed(1)}%) — $${(cohort.adjustedIncome/1000).toFixed(0)}K/yr`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#9aa0a6' } },
+                y: {
+                    grid: { color: 'rgba(255,255,255,0.04)' },
+                    ticks: { color: '#9aa0a6', callback: v => v.toFixed(0) },
+                    title: { display: true, text: 'Income Index (2024 = 100)', color: '#9aa0a6' },
+                }
+            }
+        }
+    });
+
+    // Spending Composition (stacked area: luxury vs essentials over time)
+    charts.spending = new Chart(document.getElementById('chart-spending').getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: years,
+            datasets: [
+                {
+                    label: 'Luxury/Discretionary ($T)',
+                    data: simData.map(d => d.totalLuxurySpend / 1000),
+                    borderColor: '#e879f9',
+                    backgroundColor: 'rgba(232,121,249,0.2)',
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 2,
+                    borderWidth: 2.5,
+                },
+                {
+                    label: 'Essentials ($T)',
+                    data: simData.map(d => d.totalEssentialSpend / 1000),
+                    borderColor: '#fbbf24',
+                    backgroundColor: 'rgba(251,191,36,0.2)',
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 2,
+                    borderWidth: 2.5,
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { position: 'top', labels: { color: '#9aa0a6', usePointStyle: true, padding: 20 } },
+                tooltip: {
+                    backgroundColor: '#1a1d29', borderColor: '#e879f9', borderWidth: 1,
+                    callbacks: {
+                        label: ctx => `${ctx.dataset.label}: $${ctx.parsed.y.toFixed(2)}T`
+                    }
+                }
+            },
+            scales: {
+                x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#9aa0a6' } },
+                y: {
+                    grid: { color: 'rgba(255,255,255,0.04)' },
+                    ticks: { color: '#9aa0a6', callback: v => '$' + v.toFixed(1) + 'T' },
+                    title: { display: true, text: 'Annual Spending ($T)', color: '#9aa0a6' },
+                }
+            }
+        }
+    });
+
+    // Cohort Spending Bar Chart (for selected year)
+    const yearCohort = simData[currentYearIdx].cohortData;
+    charts.cohortSpending = new Chart(document.getElementById('chart-cohort-spending').getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: yearCohort.map(c => c.name.split('(')[0].trim()),
+            datasets: [
+                {
+                    label: 'Luxury ($B)',
+                    data: yearCohort.map(c => c.luxurySpendB),
+                    backgroundColor: 'rgba(232,121,249,0.7)',
+                    borderRadius: 3,
+                    stack: 'spend',
+                },
+                {
+                    label: 'Essentials ($B)',
+                    data: yearCohort.map(c => c.essentialSpendB),
+                    backgroundColor: 'rgba(251,191,36,0.7)',
+                    borderRadius: 3,
+                    stack: 'spend',
+                },
+                {
+                    label: 'Savings/Investment ($B)',
+                    data: yearCohort.map(c => c.savingsB),
+                    backgroundColor: 'rgba(52,211,153,0.5)',
+                    borderRadius: 3,
+                    stack: 'spend',
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top', labels: { color: '#9aa0a6', usePointStyle: true, padding: 15, font: { size: 11 } } },
+                tooltip: {
+                    backgroundColor: '#1a1d29', borderColor: '#e879f9', borderWidth: 1,
+                    callbacks: {
+                        label: ctx => `${ctx.dataset.label}: $${ctx.parsed.y.toFixed(0)}B`
+                    }
+                }
+            },
+            scales: {
+                x: { grid: { display: false }, ticks: { color: '#9aa0a6', font: { size: 10 } }, stacked: true },
+                y: {
+                    grid: { color: 'rgba(255,255,255,0.04)' },
+                    ticks: { color: '#9aa0a6', callback: v => '$' + v.toFixed(0) + 'B' },
+                    stacked: true,
+                }
+            }
+        }
+    });
+
+    // Feedback loop chart
+    charts.feedback = new Chart(document.getElementById('chart-feedback').getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: years,
+            datasets: [
+                {
+                    label: 'Labor Cost Savings ($B)',
+                    data: simData.map(d => d.laborCostSavings),
+                    borderColor: '#34d399',
+                    tension: 0.3, pointRadius: 2, borderWidth: 2.5,
+                    fill: false,
+                },
+                {
+                    label: 'Wage Income Lost ($B)',
+                    data: simData.map(d => d.yearWageLoss),
+                    borderColor: '#f87171',
+                    tension: 0.3, pointRadius: 2, borderWidth: 2.5,
+                    borderDash: [6,3],
+                    fill: false,
+                },
+                {
+                    label: 'Net Displaced Workers (M)',
+                    data: simData.map(d => d.netDisplaced),
+                    borderColor: '#fbbf24',
+                    tension: 0.3, pointRadius: 2, borderWidth: 2.5,
+                    fill: false,
+                    yAxisID: 'y1',
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { position: 'top', labels: { color: '#9aa0a6', usePointStyle: true, padding: 20 } },
+                tooltip: { backgroundColor: '#1a1d29', borderColor: '#6366f1', borderWidth: 1 }
+            },
+            scales: {
+                x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#9aa0a6' } },
+                y: {
+                    type: 'linear', position: 'left',
+                    title: { display: true, text: '$ Billions', color: '#9aa0a6' },
+                    grid: { color: 'rgba(255,255,255,0.04)' },
+                    ticks: { color: '#9aa0a6', callback: v => '$' + v.toFixed(0) + 'B' }
+                },
+                y1: {
+                    type: 'linear', position: 'right',
+                    title: { display: true, text: 'Workers (millions)', color: '#9aa0a6' },
+                    grid: { drawOnChartArea: false },
+                    ticks: { color: '#fbbf24' }
+                }
+            }
+        }
+    });
+}
+
+function updateCharts() {
+    const years = simData.map(d => d.year);
+
+    // Employment
+    charts.employment.data.datasets[0].data = simData.map(d => d.totalEmployed);
+    charts.employment.data.datasets[1].data = simData.map(d => d.unemploymentRate);
+    charts.employment.update('none');
+
+    // Profit vs Purchasing
+    charts.profitVsPurchasing.data.datasets[0].data = simData.map(d => d.corpProfitGain);
+    charts.profitVsPurchasing.data.datasets[1].data = simData.map(d => d.purchasingPowerIndex);
+    charts.profitVsPurchasing.update('none');
+
+    // GDP
+    charts.gdp.data.datasets[0].data = simData.map(d => d.productivityContrib);
+    charts.gdp.data.datasets[1].data = simData.map(d => -d.demandDrag);
+    charts.gdp.data.datasets[2].data = simData.map(d => d.gdpGrowthRate);
+    charts.gdp.update('none');
+
+    // Sectors
+    const sorted = [...simData[currentYearIdx].sectorData].sort((a, b) => b.automationPct - a.automationPct);
+    charts.sectors.data.labels = sorted.map(d => d.name);
+    charts.sectors.data.datasets[0].data = sorted.map(d => d.automationPct);
+    charts.sectors.data.datasets[0].backgroundColor = sorted.map(d => {
+        if (d.automationPct > 40) return 'rgba(248,113,113,0.7)';
+        if (d.automationPct > 20) return 'rgba(251,191,36,0.7)';
+        return 'rgba(52,211,153,0.7)';
+    });
+    charts.sectors.update('none');
+
+    // Gini
+    charts.gini.data.datasets[0].data = simData.map(d => d.gini);
+    charts.gini.update('none');
+
+    // Feedback
+    charts.feedback.data.datasets[0].data = simData.map(d => d.laborCostSavings);
+    charts.feedback.data.datasets[1].data = simData.map(d => d.yearWageLoss);
+    charts.feedback.data.datasets[2].data = simData.map(d => d.netDisplaced);
+    charts.feedback.update('none');
+
+    // K-Shape Income Trajectories
+    for (let i = 0; i < 5; i++) {
+        charts.kshape.data.datasets[i].data = simData.map(d => d.cohortData[i].incomeIndex);
+    }
+    charts.kshape.update('none');
+
+    // Spending Composition
+    charts.spending.data.datasets[0].data = simData.map(d => d.totalLuxurySpend / 1000);
+    charts.spending.data.datasets[1].data = simData.map(d => d.totalEssentialSpend / 1000);
+    charts.spending.update('none');
+
+    // Cohort Spending Bar (for selected year)
+    updateCohortSpendingChart();
+}
+
+function updateKPIs() {
+    const d = simData[currentYearIdx];
+    const d0 = simData[0];
+
+    document.getElementById('kpi-unemployment').textContent = d.unemploymentRate.toFixed(1) + '%';
+    document.getElementById('kpi-unemployment-detail').textContent =
+        d.unemploymentRate > d0.unemploymentRate
+            ? `+${(d.unemploymentRate - d0.unemploymentRate).toFixed(1)}pp vs 2024`
+            : `${(d.unemploymentRate - d0.unemploymentRate).toFixed(1)}pp vs 2024`;
+    document.getElementById('kpi-unemployment').style.color =
+        d.unemploymentRate > 7 ? 'var(--negative)' : d.unemploymentRate > 5 ? 'var(--warning)' : 'var(--positive)';
+
+    const netDisplacedM = d.netDisplaced;
+    document.getElementById('kpi-displaced').textContent = netDisplacedM.toFixed(1) + 'M';
+    document.getElementById('kpi-displaced-detail').textContent =
+        `${d.yearDisplaced.toFixed(1)}M gross, ${(d.yearDisplaced - netDisplacedM).toFixed(1)}M reabsorbed`;
+
+    document.getElementById('kpi-profit').textContent =
+        (d.corpProfitGain >= 0 ? '+' : '') + d.corpProfitGain.toFixed(1) + '%';
+    document.getElementById('kpi-profit').style.color =
+        d.corpProfitGain > 0 ? 'var(--positive)' : 'var(--negative)';
+
+    document.getElementById('kpi-purchasing').textContent = d.purchasingPowerIndex.toFixed(1);
+    document.getElementById('kpi-purchasing').style.color =
+        d.purchasingPowerIndex < 95 ? 'var(--negative)' : d.purchasingPowerIndex < 100 ? 'var(--warning)' : 'var(--positive)';
+    document.getElementById('kpi-purchasing-detail').textContent = 'Index (2024 = 100)';
+
+    document.getElementById('kpi-gdp').textContent =
+        (d.gdpGrowthRate >= 0 ? '+' : '') + d.gdpGrowthRate.toFixed(1) + '%';
+    document.getElementById('kpi-gdp-detail').textContent =
+        `AI adds +${d.productivityContrib.toFixed(1)}%, demand drags -${d.demandDrag.toFixed(1)}%`;
+
+    document.getElementById('kpi-gini').textContent = d.gini.toFixed(3);
+    document.getElementById('kpi-gini-detail').textContent =
+        d.gini > 0.45 ? 'High inequality' : d.gini > 0.40 ? 'Moderate inequality' : 'Current range';
+    document.getElementById('kpi-gini').style.color =
+        d.gini > 0.50 ? 'var(--negative)' : d.gini > 0.42 ? 'var(--warning)' : 'var(--text-primary)';
+}
+
+function renderSectorTable() {
+    const d = simData[currentYearIdx];
+    const sorted = [...d.sectorData].sort((a, b) => b.automationPct - a.automationPct);
+
+    let html = '<table class="data-table"><thead><tr>';
+    html += '<th>Sector</th><th>Workers (2024)</th><th>Avg Wage</th>';
+    html += '<th>Automation %</th><th>Displaced (M)</th><th>Wage Loss ($B/yr)</th>';
+    html += '</tr></thead><tbody>';
+
+    sorted.forEach(s => {
+        const color = s.automationPct > 40 ? '#f87171' : s.automationPct > 20 ? '#fbbf24' : '#34d399';
+        html += `<tr>`;
+        html += `<td style="font-weight:600;">${s.name}</td>`;
+        html += `<td>${s.workers2024.toFixed(1)}M</td>`;
+        html += `<td>$${(s.avgWage / 1000).toFixed(0)}K</td>`;
+        html += `<td><span style="color:${color}; font-weight:700;">${s.automationPct.toFixed(1)}%</span></td>`;
+        html += `<td>${s.displaced.toFixed(2)}M</td>`;
+        html += `<td>$${(s.wageLoss / 1e9).toFixed(1)}B</td>`;
+        html += `</tr>`;
+    });
+
+    html += '</tbody></table>';
+    document.getElementById('sector-table').innerHTML = html;
+}
+
+// ============================================================
+// K-SHAPED ECONOMY FUNCTIONS
+// ============================================================
+
+function updateCohortSpendingChart() {
+    const yearCohort = simData[currentYearIdx].cohortData;
+    charts.cohortSpending.data.labels = yearCohort.map(c => c.name.split('(')[0].trim());
+    charts.cohortSpending.data.datasets[0].data = yearCohort.map(c => c.luxurySpendB);
+    charts.cohortSpending.data.datasets[1].data = yearCohort.map(c => c.essentialSpendB);
+    charts.cohortSpending.data.datasets[2].data = yearCohort.map(c => c.savingsB);
+    charts.cohortSpending.update('none');
+}
+
+function updateKShapeKPIs() {
+    const d = simData[currentYearIdx];
+    const top = d.cohortData[0];
+    const bottom = d.cohortData[4];
+
+    document.getElementById('kpi-top-income').textContent = top.incomeIndex.toFixed(1);
+    document.getElementById('kpi-top-income').style.color = top.incomeIndex >= 100 ? 'var(--positive)' : 'var(--negative)';
+    document.getElementById('kpi-top-income-detail').textContent =
+        `$${(top.adjustedIncome/1000).toFixed(0)}K/yr avg (${top.incomeIndex >= 100 ? '+' : ''}${(top.incomeIndex - 100).toFixed(1)}%)`;
+
+    document.getElementById('kpi-bottom-income').textContent = bottom.incomeIndex.toFixed(1);
+    document.getElementById('kpi-bottom-income').style.color = bottom.incomeIndex >= 95 ? 'var(--warning)' : 'var(--negative)';
+    document.getElementById('kpi-bottom-income-detail').textContent =
+        `$${(bottom.adjustedIncome/1000).toFixed(0)}K/yr avg (${bottom.incomeIndex >= 100 ? '+' : ''}${(bottom.incomeIndex - 100).toFixed(1)}%)`;
+
+    document.getElementById('kpi-income-ratio').textContent = d.topBottomIncomeRatio.toFixed(1) + ':1';
+    document.getElementById('kpi-income-ratio').style.color =
+        d.topBottomIncomeRatio > 20 ? 'var(--negative)' : d.topBottomIncomeRatio > 15 ? 'var(--warning)' : 'var(--text-primary)';
+    document.getElementById('kpi-income-ratio-detail').textContent =
+        `Was 13:1 in 2024. ${d.topBottomIncomeRatio > 13 ? 'Gap widening' : 'Gap stable'}`;
+
+    document.getElementById('kpi-luxury-market').textContent = '$' + (d.totalLuxurySpend / 1000).toFixed(2) + 'T';
+    document.getElementById('kpi-luxury-detail').textContent =
+        `Essentials: $${(d.totalEssentialSpend / 1000).toFixed(2)}T`;
+}
+
+function renderCohortTable() {
+    const d = simData[currentYearIdx];
+    const cohorts = d.cohortData;
+
+    let html = '<table class="data-table"><thead><tr>';
+    html += '<th>Income Cohort</th><th>Pop (M)</th><th>Avg Income</th>';
+    html += '<th>Income Index</th><th>Luxury %</th><th>Essentials %</th>';
+    html += '<th>Total Spending ($B)</th>';
+    html += '</tr></thead><tbody>';
+
+    const cohortColors = ['#34d399', '#38bdf8', '#fbbf24', '#fb923c', '#f87171'];
+
+    cohorts.forEach((c, i) => {
+        const indexColor = c.incomeIndex >= 100 ? '#34d399' : c.incomeIndex >= 80 ? '#fbbf24' : '#f87171';
+        const totalSpend = c.luxurySpendB + c.essentialSpendB + c.savingsB;
+        html += `<tr>`;
+        html += `<td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${cohortColors[i]};margin-right:8px;"></span><span style="font-weight:600;">${c.name}</span></td>`;
+        html += `<td>${c.effectivePop.toFixed(1)}M</td>`;
+        html += `<td>$${(c.adjustedIncome/1000).toFixed(0)}K</td>`;
+        html += `<td><span style="color:${indexColor}; font-weight:700;">${c.incomeIndex.toFixed(1)}</span></td>`;
+        html += `<td>${c.spendingOnLuxury.toFixed(1)}%</td>`;
+        html += `<td>${c.spendingOnEssentials.toFixed(1)}%</td>`;
+        html += `<td>$${totalSpend.toFixed(0)}B</td>`;
+        html += `</tr>`;
+    });
+
+    html += '</tbody></table>';
+    document.getElementById('cohort-table').innerHTML = html;
+}
+
+// ============================================================
+// INTERACTION HANDLERS
+// ============================================================
+
+function updateSim() {
+    // Update display values
+    document.getElementById('val-adoption').textContent = document.getElementById('slider-adoption').value + '%';
+    document.getElementById('val-automation').textContent = document.getElementById('slider-automation').value + '%';
+    document.getElementById('val-productivity').textContent = (parseInt(document.getElementById('slider-productivity').value) / 100).toFixed(1) + 'x';
+    document.getElementById('val-reabsorb').textContent = document.getElementById('slider-reabsorb').value + '%';
+    document.getElementById('val-passthrough').textContent = document.getElementById('slider-passthrough').value + '%';
+    const policyVal = document.getElementById('select-policy').value;
+    document.getElementById('val-policy').textContent = policyVal === 'none' ? 'None' : policyVal === 'moderate' ? 'Moderate' : 'Strong';
+
+    runSimulation();
+    updateCharts();
+    updateKPIs();
+    updateKShapeKPIs();
+    renderSectorTable();
+    renderCohortTable();
+}
+
+function updateYearView() {
+    currentYearIdx = parseInt(document.getElementById('slider-year').value);
+    document.getElementById('year-display').textContent = 2024 + currentYearIdx;
+    updateKPIs();
+    updateKShapeKPIs();
+
+    // Update sector chart and table for selected year
+    const sorted = [...simData[currentYearIdx].sectorData].sort((a, b) => b.automationPct - a.automationPct);
+    charts.sectors.data.labels = sorted.map(d => d.name);
+    charts.sectors.data.datasets[0].data = sorted.map(d => d.automationPct);
+    charts.sectors.data.datasets[0].backgroundColor = sorted.map(d => {
+        if (d.automationPct > 40) return 'rgba(248,113,113,0.7)';
+        if (d.automationPct > 20) return 'rgba(251,191,36,0.7)';
+        return 'rgba(52,211,153,0.7)';
+    });
+    charts.sectors.update('none');
+    updateCohortSpendingChart();
+    renderSectorTable();
+    renderCohortTable();
+}
+
+function loadScenario(name) {
+    document.querySelectorAll('.scenario-btn').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+
+    const scenarios = {
+        conservative: { adoption: 50, automation: 20, productivity: 120, reabsorb: 75, passthrough: 35, policy: 'moderate' },
+        baseline:     { adoption: 70, automation: 35, productivity: 150, reabsorb: 55, passthrough: 15, policy: 'moderate' },
+        aggressive:   { adoption: 90, automation: 55, productivity: 250, reabsorb: 35, passthrough: 8,  policy: 'none' },
+        bifurcation:  { adoption: 85, automation: 45, productivity: 300, reabsorb: 40, passthrough: 5,  policy: 'none' },
+    };
+
+    const s = scenarios[name];
+    document.getElementById('slider-adoption').value = s.adoption;
+    document.getElementById('slider-automation').value = s.automation;
+    document.getElementById('slider-productivity').value = s.productivity;
+    document.getElementById('slider-reabsorb').value = s.reabsorb;
+    document.getElementById('slider-passthrough').value = s.passthrough;
+    document.getElementById('select-policy').value = s.policy;
+
+    updateSim();
+}
+
+// ============================================================
+// INIT
+// ============================================================
+
+runSimulation();
+initCharts();
+updateKPIs();
+updateKShapeKPIs();
+renderSectorTable();
+renderCohortTable();
+</script>
+</body>
+</html>
