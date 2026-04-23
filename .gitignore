@@ -1,1 +1,6 @@
 .vercel
+
+# Never commit Firebase admin SDK / service-account keys
+*service-account*.json
+*-adminsdk-*.json
+*service_account*.json
